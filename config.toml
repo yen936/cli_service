@@ -1,0 +1,7 @@
+[[servers]]
+name = "Google"
+uri = "172.217.215.101"
+
+[[servers]]
+name = "ChatGPT"
+uri = "104.18.41.60"
