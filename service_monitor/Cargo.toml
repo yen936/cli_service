@@ -9,6 +9,7 @@ toml = "0.5"
 regex = "1.7"
 colored = "2.0"
 chrono = "0.4"
+notify-rust = "4"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 clap = { version = "4.0", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
