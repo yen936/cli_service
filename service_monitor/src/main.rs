@@ -2,9 +2,7 @@ use std::{thread, time::Duration};
 use colored::*;
 use chrono::Local;
 use clap::Parser;
-use regex::Regex;
 use std::str;
-use std::process::Command;
 use std::io::{self, Write};
 use notify_rust::Notification;
 
@@ -49,7 +47,7 @@ fn notify_inactive_servers(inactive_servers: &[(String, String)]) {
 fn print_table(servers: &[(String, String)]) -> Vec<(String, String)> {
     let col_server_width = 15;
     let col_app_width = 20;
-    let col_result_width = 25;
+    let col_result_width = 23;
     let col_datetime_width = 20;
     let mut inactive_servers = Vec::new();
 
@@ -70,9 +68,15 @@ fn print_table(servers: &[(String, String)]) -> Vec<(String, String)> {
             inactive_servers.push((server.clone(), app.clone()));
         }
         let datetime = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let server_formatted = format_server_print(server);
+        let server_trimmed = if server_formatted.len() > col_server_width {
+            format!("{}...", &server_formatted[..col_server_width - 3])
+        } else {
+            server_formatted.clone()
+        };
         println!(
-            "| {:<col_server_width$} | {:<col_app_width$} | {:<col_result_width$}        | {:<col_datetime_width$} |",
-            server, app, format_status(status), datetime
+            "| {:<col_server_width$} | {:<col_app_width$} | {:<col_result_width$}          | {:<col_datetime_width$} |",
+            server_trimmed, app, format_status(status), datetime
         );
     }
 
@@ -83,35 +87,45 @@ fn print_table(servers: &[(String, String)]) -> Vec<(String, String)> {
     inactive_servers
 }
 
-fn check_server_uptime(address: &str) -> ServerStatus {
-    let ping_count_arg = if cfg!(target_os = "windows") { "-n" } else { "-c" };
-    let output = Command::new("ping")
-        .arg(ping_count_arg)
-        .arg("1")
-        .arg(address)
-        .output();
+fn format_server_print(address: &str) -> String {
+    if address.starts_with("http://") {
+        address.replace("http://", "")
+    } else if address.starts_with("https://") {
+        address.replace("https://", "")
+    } else {
+        address.to_string()
+    }
+}
 
-    if let Ok(output) = output {
-        if output.status.success() {
-            if let Ok(stdout) = str::from_utf8(&output.stdout) {
-                if let Ok(re) = Regex::new(r"(\d+)% packet loss") {
-                    if let Some(captures) = re.captures(stdout) {
-                        if let Some(percentage) = captures.get(1) {
-                            if let Ok(pct_packet_loss) = percentage.as_str().parse::<u32>() {
-                                return if pct_packet_loss == 0 {
-                                    ServerStatus::Active
-                                } else {
-                                    ServerStatus::Inactive
-                                };
-                            }
-                        }
-                    }
-                }
+fn ensure_protocol(address: &str) -> String {
+    if address.starts_with("http://") || address.starts_with("https://") {
+        address.to_string()
+    } else {
+        format!("http://{}", address)
+    }
+}
+
+fn check_server_uptime(address: &str) -> ServerStatus {
+    let full_address = ensure_protocol(address);
+
+    let client = reqwest::blocking::Client::new();
+    let response = client
+        .get(full_address)
+        .timeout(std::time::Duration::from_secs(5))
+        .send();
+    
+    match response {
+        Ok(res) => {
+            if res.status().is_success() {
+                ServerStatus::Active
+            } else {
+                ServerStatus::Inactive
             }
         }
+        Err(_err) => {
+            ServerStatus::Unknown
+        }
     }
-
-    ServerStatus::Unknown
 }
 
 /// CLI structure to handle input arguments
@@ -145,7 +159,8 @@ fn main() {
     let default_servers = vec![
         ("chat.com".to_string(), "Chat Application".to_string()),
         ("192.4.5.11".to_string(), "Example App".to_string()),
-        ("dns.google".to_string(), "Google DNS Service".to_string()),
+        ("https://jsonplaceholder.typicode.com/todos/1".to_string(), "REST Api Example".to_string()),
+        ("https://dns.google".to_string(), "Google DNS Service".to_string()),
     ];
 
     // Use provided servers or defaults
