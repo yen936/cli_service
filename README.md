@@ -34,7 +34,7 @@ Server Monitor is a lightweight command-line application written in Rust that al
 You can run the `server-monitor` application by executing the compiled binary with the desired arguments. The basic syntax is:
 
 ```bash
-cargo run --servers server1,app1 server2,app2 --interval <seconds>
+./target/debug/service_monitor --servers server1,app1 server2,app2 --interval <seconds>
 ```
 
 ### Arguments
@@ -48,28 +48,30 @@ cargo run --servers server1,app1 server2,app2 --interval <seconds>
 To monitor Google DNS servers:
 
 ```bash
-cargo run --servers 8.8.8.8,Google DNS --interval 55
+./target/debug/service_monitor --servers 8.8.8.8,Google DNS --interval 55
 ```
 
 ## Default Servers
 
 If no servers are specified, the application will monitor the following default servers:
 
-- `chat.com` - ChatGPT Application
+- `chat.com` - ChatGPT Application: will display inactive b/c sign in reqired
 - `dns.google` - Google DNS Service
+- `jsonplaceholder` - API example  
 
 ## Output Format
 
 The application displays the server statuses in a table format:
 
 ```
-+--------------+--------------------+----------------------+----------------------+
-| Server       | App                | Result               | Last Checked         |
-+--------------+--------------------+----------------------+----------------------+
-| chat.com     | Chat Application   | Active ●             | 2024-11-22 14:53:59  |
-| 192.4.5.11   | Example App        | Inactive ●           | 2024-11-22 14:54:10  |
-| dns.google   | Google DNS Service | Active ●             | 2024-11-22 14:54:10  |
-+--------------+--------------------+----------------------+----------------------+
++-----------------+----------------------+-------------------------+----------------------+
+| Server          | App                  | Result                  | Last Checked         |
++-----------------+----------------------+-------------------------+----------------------+
+| chat.com        | Chat Application     | Inactive ●              | 2024-11-30 16:43:17  |
+| 192.4.5.11      | Example App          | Unknown ●               | 2024-11-30 16:43:22  |
+| jsonplacehol... | REST Api Example     | Active ●                | 2024-11-30 16:43:23  |
+| dns.google      | Google DNS Service   | Active ●                | 2024-11-30 16:43:23  |
++-----------------+----------------------+-------------------------+----------------------+
 ```
 
 ## License
